@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voz a Texto Profesional</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #007aff;
+            --danger-color: #ff3b30;
+            --dark-grey: #333;
+            --light-grey: #f2f2f7;
+            --white: #ffffff;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(120deg, #fdfbfb 0%, #ebedee 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            color: var(--dark-grey);
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 20px;
+            border: 1px solid rgba(209, 213, 219, 0.3);
+            padding: 2.5rem;
+            box-shadow: var(--shadow);
+            width: 100%;
+            max-width: 700px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--dark-grey);
+        }
+
+        #controls {
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+        }
+
+        button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            background-color: var(--primary-color);
+            color: var(--white);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 122, 255, 0.3);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        #start-btn.listening {
+            background-color: var(--danger-color);
+            box-shadow: 0 4px 15px rgba(255, 59, 48, 0.3);
+        }
+        #start-btn.listening:hover {
+            box-shadow: 0 8px 25px rgba(255, 59, 48, 0.4);
+        }
+
+        #result-container {
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            min-height: 250px;
+            padding: 1.5rem;
+            text-align: left;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            color: #555;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        #status {
+            margin-top: 1.5rem;
+            color: #888;
+            font-style: normal;
+            font-weight: 600;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 0.5; }
+            50% { opacity: 1; }
+            100% { opacity: 0.5; }
+        }
+
+        .pulse-dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--danger-color);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Asistente de Voz</h1>
+        
+        <div id="controls">
+            <button id="start-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>
+                <span id="start-btn-text">Empezar</span>
+            </button>
+            <button id="download-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                <span>Descargar</span>
+            </button>
+        </div>
+        
+        <div id="result-container" contenteditable="true"></div>
+        
+        <p id="status"></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const startBtn = document.getElementById('start-btn');
+            const startBtnText = document.getElementById('start-btn-text');
+            const downloadBtn = document.getElementById('download-btn');
+            const resultContainer = document.getElementById('result-container');
+            const status = document.getElementById('status');
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                status.innerHTML = 'Lo siento, tu navegador no soporta el reconocimiento de voz.';
+                startBtn.disabled = true;
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'es-ES';
+            recognition.interimResults = true;
+            recognition.continuous = true;
+
+            let isListening = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                startBtnText.textContent = 'Detener';
+                startBtn.classList.add('listening');
+                status.innerHTML = '<div class="pulse-dot"></div> Escuchando...';
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                startBtnText.textContent = 'Empezar';
+                startBtn.classList.remove('listening');
+                status.innerHTML = 'Pulsa el botón para empezar.';
+            };
+
+            recognition.onerror = (event) => {
+                status.innerHTML = 'Error: ' + event.error;
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+                for (let i = 0; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript + ' ';
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                resultContainer.innerHTML = finalTranscript + `<i style="color:#999;">${interimTranscript}</i>`;
+            };
+
+            startBtn.addEventListener('click', () => {
+                if (isListening) {
+                    recognition.stop();
+                } else {
+                    resultContainer.innerHTML = '';
+                    recognition.start();
+                }
+            });
+
+            downloadBtn.addEventListener('click', () => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+
+                const text = resultContainer.innerText;
+
+                if (text.trim() === '') {
+                    alert('No hay texto para descargar.');
+                    return;
+                }
+
+                doc.setFont('Helvetica', 'bold');
+                doc.setFontSize(24);
+                doc.text('Transcripción de Voz', 40, 60);
+
+                doc.setFont('Helvetica', 'normal');
+                doc.setFontSize(12);
+                const splitText = doc.splitTextToSize(text, 515); // 595pt (A4 width) - 40pt*2 (margins)
+                doc.text(splitText, 40, 90);
+
+                doc.save('Transcripcion-Profesional.pdf');
+            });
+            
+            status.innerHTML = 'Pulsa el botón para empezar.';
+        });
+    </script>
+
+</body>
+</html>
